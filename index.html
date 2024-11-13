@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Parameter Builder</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #555;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 5px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #6e8efb;
+        }
+
+        .preview {
+            margin: 1rem 0;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            font-size: 14px;
+            word-break: break-all;
+            text-align: left;
+        }
+
+        .preview-label {
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 5px;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 1rem;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s ease;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .same-page {
+            background-color: #6e8efb;
+            color: white;
+        }
+
+        .new-page {
+            background-color: #a777e3;
+            color: white;
+        }
+
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .error {
+            color: #ff4444;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>URL Parameter Builder</h1>
+        
+        <div class="input-group">
+            <label for="urlHead">Base URL:</label>
+            <input type="url" id="urlHead" placeholder="e.g., https://dev.fvpvportal.com" />
+            <div id="urlError" class="error">Please enter a valid URL</div>
+        </div>
+
+        <div class="input-group">
+            <label for="token">Token:</label>
+            <input type="text" id="token" placeholder="Enter token value" />
+            <div id="tokenError" class="error">Token is required</div>
+        </div>
+
+        <div class="input-group">
+            <label for="language">Language:</label>
+            <input type="text" id="language" placeholder="e.g., pl, en, de" maxlength="2" />
+            <div id="langError" class="error">Please enter a valid language code</div>
+        </div>
+
+        <div class="preview">
+            <div class="preview-label">Generated URL:</div>
+            <div id="urlPreview"></div>
+        </div>
+
+        <div class="button-container">
+            <button onclick="redirect('same')" class="same-page">Open in Same Page</button>
+            <button onclick="redirect('new')" class="new-page">Open in New Page</button>
+        </div>
+    </div>
+
+    <script>
+        function updatePreview() {
+            const urlHead = document.getElementById('urlHead').value.trim();
+            const token = document.getElementById('token').value.trim();
+            const language = document.getElementById('language').value.trim();
+
+            let baseUrl = urlHead;
+            if (baseUrl && !baseUrl.match(/^https?:\/\//i)) {
+                baseUrl = 'https://' + baseUrl;
+            }
+
+            let finalUrl = baseUrl;
+            if (token || language) {
+                finalUrl += '?';
+                if (token) {
+                    finalUrl += `token=${encodeURIComponent(token)}`;
+                }
+                if (language) {
+                    finalUrl += token ? '&' : '';
+                    finalUrl += `language=${encodeURIComponent(language)}`;
+                }
+            }
+
+            document.getElementById('urlPreview').textContent = finalUrl;
+        }
+
+        function validateInputs() {
+            const urlHead = document.getElementById('urlHead').value.trim();
+            const token = document.getElementById('token').value.trim();
+            const language = document.getElementById('language').value.trim();
+            let isValid = true;
+
+            // Reset errors
+            document.querySelectorAll('.error').forEach(el => el.style.display = 'none');
+
+            // Validate URL
+            if (!urlHead) {
+                document.getElementById('urlError').style.display = 'block';
+                document.getElementById('urlError').textContent = 'Base URL is required';
+                isValid = false;
+            } else {
+                try {
+                    new URL(urlHead.match(/^https?:\/\//i) ? urlHead : 'https://' + urlHead);
+                } catch (e) {
+                    document.getElementById('urlError').style.display = 'block';
+                    document.getElementById('urlError').textContent = 'Please enter a valid URL';
+                    isValid = false;
+                }
+            }
+
+            // Validate token
+            if (!token) {
+                document.getElementById('tokenError').style.display = 'block';
+                isValid = false;
+            }
+
+            // Validate language
+            if (language && !language.match(/^[a-zA-Z]{2}$/)) {
+                document.getElementById('langError').style.display = 'block';
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        function redirect(type) {
+            if (!validateInputs()) {
+                return;
+            }
+
+            const finalUrl = document.getElementById('urlPreview').textContent;
+            
+            if (type === 'same') {
+                window.location.href = finalUrl;
+            } else {
+                window.open(finalUrl, '_blank');
+            }
+        }
+
+        // Add input listeners for live preview
+        ['urlHead', 'token', 'language'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updatePreview);
+        });
+
+        // Initialize preview
+        updatePreview();
+    </script>
+</body>
+</html>
